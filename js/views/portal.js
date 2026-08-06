@@ -114,9 +114,134 @@ function submissionTable(rows, showAll = true) {
   return `<div class="table-wrap"><table class="data-table"><thead><tr><th>Referenz</th><th>Typ</th><th>Person</th><th>Status</th><th>Priorität</th><th>Datum</th><th>Aktionen</th></tr></thead><tbody>${rows.map(row => `<tr><td>${escapeHtml(row.reference)}</td><td>${escapeHtml(row.type)}</td><td>${escapeHtml(row.submitter_name || 'Gast')}</td><td>${badge(statusLabel(row.status), statusTone(row.status))}</td><td>${escapeHtml(row.priority || 'normal')}</td><td>${formatDate(row.created_at)}</td><td><div class="table-actions"><button class="button button--ghost button--compact" data-inspect-submission="${row.id}">Öffnen</button>${showAll ? `<select class="select" style="height:36px;width:150px" data-submission-status="${row.id}">${submissionStatusOptions(row)}</select>` : ''}${isOwner(authState.profile.website_role) ? `<button class="button button--danger button--compact" data-delete="submissions:${row.id}">${icon('trash')}</button>` : ''}</div></td></tr>`).join('')}</tbody></table></div>`;
 }
 
-async function submissionsView() {
-  const rows = await listRows('submissions');
-  return `<section class="portal-panel" style="margin-top:0"><div class="portal-panel__head"><div><h2>Alle Formulareingänge</h2><p>Ideen, Feedback, Support, Meldungen, Partnerschaften, Creator-Anträge, Einsprüche und Bewerbungen.</p></div><input class="input" id="submission-search" placeholder="Suchen …" style="max-width:260px"></div><div id="submission-table-wrap">${submissionTable(rows)}</div></section>`;
+async function accountsView() {
+  const [profiles, accountLinks] = await Promise.all([
+    listRows('profiles'),
+    listRows('account_links'),
+  ]);
+
+  viewCache.profiles = profiles;
+  viewCache.accountLinks = accountLinks;
+
+  const profilesContent = profiles.length
+    ? `<div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Discord / E-Mail</th>
+              <th>Roblox</th>
+              <th>Website-Rolle</th>
+              <th>Freigabe</th>
+              <th>Status</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${profiles.map(profile => `
+              <tr>
+                <td>${escapeHtml(profile.discord_name || profile.email || 'Unbekannt')}</td>
+                <td>${escapeHtml(profile.roblox_name || 'Nicht verknüpft')}</td>
+                <td>${escapeHtml(roleByKey(profile.website_role || 'player').label)}</td>
+                <td>
+                  ${badge(
+                    profile.is_approved ? 'Freigegeben' : 'Ausstehend',
+                    profile.is_approved ? 'done' : 'open',
+                  )}
+                </td>
+                <td>${escapeHtml(profile.status || 'active')}</td>
+                <td>
+                  ${
+                    isOwner(authState.profile.website_role)
+                      ? `<button
+                          class="button button--ghost button--compact"
+                          type="button"
+                          data-edit-profile="${profile.id}"
+                        >
+                          Bearbeiten
+                        </button>`
+                      : '<span class="muted">Nur Ansicht</span>'
+                  }
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`
+    : emptyState({
+        icon: '♙',
+        title: 'Keine Konten vorhanden',
+        text: 'Registrierte Konten erscheinen hier.',
+      });
+
+  const linksContent = accountLinks.length
+    ? `<div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Discord</th>
+              <th>Roblox</th>
+              <th>Code</th>
+              <th>Status</th>
+              <th>Erstellt</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${accountLinks.map(link => `
+              <tr>
+                <td>${escapeHtml(link.discord_name || '—')}</td>
+                <td>${escapeHtml(link.roblox_name || '—')}</td>
+                <td><code>${escapeHtml(link.verification_code || '—')}</code></td>
+                <td>
+                  ${badge(
+                    statusLabel(link.status || 'pending'),
+                    statusTone(link.status || 'pending'),
+                  )}
+                </td>
+                <td>${formatDate(link.created_at)}</td>
+                <td>
+                  <button
+                    class="button button--ghost button--compact"
+                    type="button"
+                    data-review-link="${link.id}"
+                  >
+                    Prüfen
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`
+    : emptyState({
+        icon: '◇',
+        title: 'Keine Roblox-Verknüpfungen',
+        text: 'Neue Verknüpfungsanträge erscheinen hier.',
+      });
+
+  return `
+    <div class="portal-split">
+      <section class="portal-panel" style="margin-top:0">
+        <div class="portal-panel__head">
+          <div>
+            <h2>Konten und Website-Rechte</h2>
+            <p>Rollen, Freigaben und Zugangsstatus verwalten.</p>
+          </div>
+        </div>
+        ${profilesContent}
+      </section>
+
+      <section class="portal-panel" style="margin-top:0">
+        <div class="portal-panel__head">
+          <div>
+            <h2>Roblox-Verknüpfungen</h2>
+            <p>Profilcode und Discord-Bestätigung prüfen.</p>
+          </div>
+        </div>
+        ${linksContent}
+      </section>
+    </div>
+  `;
 }
 
 async function playerRecordsView() {
