@@ -8,8 +8,67 @@ export async function currentAuth() {
   if (!isSupabaseConfigured()) {
     const saved = localStorage.getItem(DEMO_PROFILE_KEY);
     const profile = saved ? JSON.parse(saved) : null;
-    return { session: profile ? { user: { id: profile.id, email: profile.email } } : null, user: profile ? { id: profile.id, email: profile.email } : null, profile, demo: true };
+
+    return {
+      session: profile
+        ? { user: { id: profile.id, email: profile.email } }
+        : null,
+      user: profile
+        ? { id: profile.id, email: profile.email }
+        : null,
+      profile,
+      demo: true,
+    };
   }
+
+  const supabase = await getSupabase();
+
+  let {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  if (sessionError) {
+    console.warn('Session konnte nicht gelesen werden:', sessionError);
+  }
+
+  if (!session) {
+    const {
+      data: refreshed,
+      error: refreshError,
+    } = await supabase.auth.refreshSession();
+
+    if (!refreshError) {
+      session = refreshed.session;
+    }
+  }
+
+  if (!session?.user) {
+    return {
+      session: null,
+      user: null,
+      profile: null,
+      demo: false,
+    };
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.warn('Profil konnte nicht geladen werden:', profileError);
+  }
+
+  return {
+    session,
+    user: session.user,
+    profile: profile ?? null,
+    demo: false,
+  };
+}
   const supabase = await getSupabase();
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return { session: null, user: null, profile: null, demo: false };
