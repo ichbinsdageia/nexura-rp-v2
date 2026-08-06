@@ -18,8 +18,8 @@ export const CONFIG = Object.freeze({
     playStyle: 'Anfängerfreundlich bis mittel-realistisch',
   },
   supabase: {
-    url: 'SUPABASE_URL_HIER_EINTRAGEN',
-    publishableKey: 'SUPABASE_PUBLISHABLE_KEY_HIER_EINTRAGEN',
+    url: 'https://xrukjxewcpqmdlvutgja.supabase.co/rest/v1/',
+    publishableKey: 'sb_publishable_lNGQSsk52stH_KwDe2Z5Jg_CslW7bII',
   },
   features: {
     demoMode: true,
