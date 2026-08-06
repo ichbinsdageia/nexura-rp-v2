@@ -110,6 +110,7 @@ const orderColumns = {
   team_records: ['updated_at', { ascending: false }],
   audit_log: ['created_at', { ascending: false }],
   profiles: ['created_at', { ascending: false }],
+  team_positions: ['updated_at', { ascending: false }],
   account_links: ['created_at', { ascending: false }],
 };
 
