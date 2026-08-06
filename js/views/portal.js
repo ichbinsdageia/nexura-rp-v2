@@ -244,6 +244,35 @@ async function accountsView() {
   `;
 }
 
+async function submissionsView() {
+  const rows = await listRows('submissions');
+
+  return `
+    <section class="portal-panel" style="margin-top:0">
+      <div class="portal-panel__head">
+        <div>
+          <h2>Alle Formulareingänge</h2>
+          <p>
+            Ideen, Feedback, Support, Meldungen, Partnerschaften,
+            Creator-Anträge, Einsprüche und Bewerbungen.
+          </p>
+        </div>
+
+        <input
+          class="input"
+          id="submission-search"
+          placeholder="Suchen …"
+          style="max-width:260px"
+        >
+      </div>
+
+      <div id="submission-table-wrap">
+        ${submissionTable(rows)}
+      </div>
+    </section>
+  `;
+}
+
 async function playerRecordsView() {
   const rows = await listRows('player_records');
   return `<section class="portal-panel" style="margin-top:0"><div class="portal-panel__head"><div><h2>Spielerakten</h2><p>Punkte, Sanktionen, Beweise und interne Notizen. Löschen darf nur der Owner.</p></div>${hasPermission(authState.profile.website_role, 'manage_player_records') ? '<button class="button button--primary button--compact" data-create-player-record>Neue Akte</button>' : ''}</div>${rows.length ? `<div class="table-wrap"><table class="data-table"><thead><tr><th>Roblox</th><th>Discord</th><th>Punkte</th><th>Aktive Sanktion</th><th>Aktualisiert</th><th>Aktionen</th></tr></thead><tbody>${rows.map(row => `<tr><td>${escapeHtml(row.roblox_name)}</td><td>${escapeHtml(row.discord_name || '—')}</td><td>${Number(row.points || 0)}</td><td>${escapeHtml(row.active_sanction || 'Keine')}</td><td>${formatDate(row.updated_at || row.created_at)}</td><td><div class="table-actions"><button class="button button--ghost button--compact" data-open-player-record="${row.id}">Akte</button>${isOwner(authState.profile.website_role) ? `<button class="button button--danger button--compact" data-delete="player_records:${row.id}">${icon('trash')}</button>` : ''}</div></td></tr>`).join('')}</tbody></table></div>` : emptyState({ icon: '▤', title: 'Keine Spielerakten', text: 'Neue Akten können durch Administration angelegt werden.' })}</section>`;
