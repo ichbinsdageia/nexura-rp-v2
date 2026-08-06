@@ -18,7 +18,7 @@ export const CONFIG = Object.freeze({
     playStyle: 'Anfängerfreundlich bis mittel-realistisch',
   },
   supabase: {
-    url: 'https://xrukjxewcpqmdlvutgja.supabase.co/rest/v1/',
+    url: 'https://xrukjxewcpqmdlvutgja.supabase.co',
     publishableKey: 'sb_publishable_lNGQSsk52stH_KwDe2Z5Jg_CslW7bII',
   },
   features: {
