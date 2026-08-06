@@ -1,0 +1,30 @@
+const paths = {
+  arrow: '<path d="M4 10h11M11 5l5 5-5 5"/>',
+  discord: '<path d="M7.2 6.2c2-.8 3.6-.8 5.6 0M6 13.5c3 2 5 2 8 0M7.5 11h.01M12.5 11h.01"/><path d="M5 5.5c-1.4 2.3-1.7 4.7-1.2 7.6 1.2 1.1 2.5 1.7 3.7 2l.8-1.2M15 5.5c1.4 2.3 1.7 4.7 1.2 7.6-1.2 1.1-2.5 1.7-3.7 2l-.8-1.2"/>',
+  game: '<path d="M6.2 7.5 4.5 14a1.7 1.7 0 0 0 2.7 1.8l2-1.6h1.6l2 1.6a1.7 1.7 0 0 0 2.7-1.8l-1.7-6.5A2 2 0 0 0 11.9 6H8.1a2 2 0 0 0-1.9 1.5Z"/><path d="M7 10h2M8 9v2M12.5 9.5h.01M14 11h.01"/>',
+  shield: '<path d="M10 2.8 4 5.6v4.2c0 3.8 2.4 6.4 6 7.4 3.6-1 6-3.6 6-7.4V5.6L10 2.8Z"/><path d="m7.2 10 1.8 1.8 3.8-4"/>',
+  users: '<path d="M7.4 9a2.7 2.7 0 1 0 0-5.4A2.7 2.7 0 0 0 7.4 9ZM2.8 16c.4-3 2-4.5 4.6-4.5s4.2 1.5 4.6 4.5M13 4.2a2.5 2.5 0 0 1 0 4.6M14 11.8c2 .3 3 1.7 3.2 4.2"/>',
+  clock: '<circle cx="10" cy="10" r="7"/><path d="M10 6v4l2.5 1.5"/>',
+  file: '<path d="M5 2.8h6l4 4V17H5z"/><path d="M11 2.8V7h4M7.5 10h5M7.5 13h5"/>',
+  briefcase: '<rect x="3" y="6" width="14" height="10" rx="2"/><path d="M7 6V4h6v2M3 10h14M8 10v1h4v-1"/>',
+  headset: '<path d="M4 11V9a6 6 0 0 1 12 0v2M4 11h2v4H4zM14 11h2v4h-2zM14 15c0 1-1 2-3 2"/>',
+  home: '<path d="m3 9 7-6 7 6v8H5V9"/><path d="M8 17v-5h4v5"/>',
+  login: '<path d="M8 3H4v14h4M12 6l4 4-4 4M6 10h10"/>',
+  dashboard: '<rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><rect x="11" y="11" width="6" height="6" rx="1"/>',
+  folder: '<path d="M3 5h5l2 2h7v9H3z"/>',
+  gavel: '<path d="m7 6 5 5M5 8l4-4 3 3-4 4zM11 14l4-4 3 3-4 4zM3 17h9"/>',
+  calendar: '<rect x="3" y="4" width="14" height="13" rx="2"/><path d="M6 2v4M14 2v4M3 8h14"/>',
+  settings: '<circle cx="10" cy="10" r="2.5"/><path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M15.3 4.7l-1.4 1.4M6.1 13.9l-1.4 1.4"/>',
+  logout: '<path d="M8 3H4v14h4M12 6l4 4-4 4M6 10h10"/>',
+  search: '<circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/>',
+  plus: '<path d="M10 4v12M4 10h12"/>',
+  edit: '<path d="m4 14-.7 3 3-.7L15 7.6 12.4 5zM11.5 5.8l2.7 2.7"/>',
+  trash: '<path d="M4 6h12M8 6V4h4v2M6 6l.8 11h6.4L14 6M8.5 9v5M11.5 9v5"/>',
+  lock: '<rect x="4" y="8" width="12" height="9" rx="2"/><path d="M7 8V6a3 3 0 0 1 6 0v2"/>',
+  bell: '<path d="M5 13h10l-1.2-2V8a3.8 3.8 0 0 0-7.6 0v3zM8.5 16h3"/>',
+  upload: '<path d="M10 13V3M6 7l4-4 4 4M4 12v5h12v-5"/>',
+  check: '<path d="m4 10 4 4 8-9"/>',
+};
+export function icon(name, className = '') {
+  return `<svg class="${className}" viewBox="0 0 20 20" aria-hidden="true">${paths[name] || paths.file}</svg>`;
+}
