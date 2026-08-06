@@ -13,7 +13,7 @@ export async function getSupabase() {
   if (!isSupabaseConfigured()) return null;
 
   if (!clientPromise) {
-    clientPromise = import('https://esm.sh/@supabase/supabase-js@2')
+    clientPromise = import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm')
       .then(({ createClient }) => createClient(
         CONFIG.supabase.url,
         CONFIG.supabase.publishableKey,
