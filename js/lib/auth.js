@@ -68,6 +68,7 @@ export async function currentAuth() {
     profile: profile ?? null,
     demo: false,
   };
+}
 
 export async function signInEmail(email, password) {
   if (!isSupabaseConfigured()) {
