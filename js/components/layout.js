@@ -10,7 +10,9 @@ function navLink(path, label, currentPath) {
 
 export async function publicLayout(content, { path = location.pathname, hideStatus = false } = {}) {
   const auth = await currentAuth();
-  const accountLabel = auth.profile ? (auth.profile.website_role === 'owner' ? 'Owner-Portal' : 'Mein Konto') : 'Anmelden';
+ const isLoggedIn = Boolean(auth.user);
+const isOwner = auth.profile?.website_role === 'owner';
+const accountLabel = isOwner ? 'Owner-Portal' : isLoggedIn ? 'Mein Konto' : 'Anmelden';
   return `<div class="page">
     ${hideStatus ? '' : `<div class="status-strip"><div class="shell status-strip__inner"><span class="status-dot" id="global-status-dot"></span><span><strong id="global-status">Serverstatus wird geladen</strong></span><span>•</span><span><strong id="global-players">– / –</strong> Spieler</span><span class="status-spacer"></span><span id="global-updated">Noch nicht aktualisiert</span></div></div>`}
     <header class="site-header"><div class="shell nav-wrap">
