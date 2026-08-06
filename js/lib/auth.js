@@ -68,13 +68,6 @@ export async function currentAuth() {
     profile: profile ?? null,
     demo: false,
   };
-}
-  const supabase = await getSupabase();
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return { session: null, user: null, profile: null, demo: false };
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
-  return { session, user: session.user, profile, demo: false };
-}
 
 export async function signInEmail(email, password) {
   if (!isSupabaseConfigured()) {
