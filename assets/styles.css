@@ -292,7 +292,16 @@ button { color: inherit; }
 .portal-panel__head { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 17px; }
 .portal-panel__head h2 { margin: 0; font-size: 1.1rem; }
 .portal-panel__head p { margin: 4px 0 0; color: var(--muted); font-size: .78rem; }
-.table-wrap { overflow: auto; border-radius: 13px; border: 1px solid rgba(255,255,255,.06); }
+.table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: 13px;
+  border: 1px solid rgba(255,255,255,.06);
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
 .data-table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: .8rem; }
 .data-table th { padding: 11px 13px; text-align: left; color: #81798e; background: rgba(255,255,255,.026); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; }
 .data-table td { padding: 13px; border-top: 1px solid rgba(255,255,255,.055); color: #c8bfd4; vertical-align: top; }
@@ -304,7 +313,15 @@ button { color: inherit; }
 .status-chip--done { color: #aaffd4; background: rgba(66,229,158,.1); }
 .status-chip--rejected { color: #ffb3c0; background: rgba(255,100,124,.1); }
 .portal-form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 15px; }
-.portal-split { display: grid; grid-template-columns: .9fr 1.1fr; gap: 18px; }
+.portal-split {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+  gap: 18px;
+}
+
+.portal-split > * {
+  min-width: 0;
+}
 .timeline { display: grid; gap: 10px; }
 .timeline-item { display: grid; grid-template-columns: 10px 1fr; gap: 12px; }
 .timeline-dot { width: 8px; height: 8px; margin-top: 7px; border-radius: 50%; background: var(--violet); box-shadow: 0 0 12px var(--violet); }
