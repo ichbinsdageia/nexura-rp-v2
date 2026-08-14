@@ -16,7 +16,28 @@ export async function publicLayout(content, { path = location.pathname, hideStat
     <header class="site-header"><div class="shell nav-wrap">
       <a class="brand" href="/" data-link aria-label="Nexura RP Startseite"><img src="/assets/nexura-logo.jpg" alt="Nexura RP Logo"><span class="brand-copy"><strong>Nexura RP</strong><small>Emergency Hamburg</small></span></a>
       <button class="menu-toggle" type="button" aria-label="Menü öffnen" data-menu-toggle><span></span><span></span></button>
-      <nav class="primary-nav" data-primary-nav>${PUBLIC_NAV.map(([p,l]) => navLink(p,l,path)).join('')}</nav>
+<nav class="primary-nav" data-primary-nav>
+  ${PUBLIC_NAV.map(([p,l]) => navLink(p,l,path)).join('')}
+
+  <div class="mobile-nav-actions">
+    <a
+      href="${auth.profile?.website_role === 'owner' ? '/portal' : '/konto'}"
+      data-link
+    >
+      ${icon('login')}
+      ${escapeHtml(accountLabel)}
+    </a>
+
+    <a
+      href="${CONFIG.discordUrl}"
+      target="_blank"
+      rel="noopener"
+    >
+      ${icon('discord')}
+      Discord
+    </a>
+  </div>
+</nav>
       <div class="nav-actions"><a class="button button--secondary button--compact" href="${auth.profile?.website_role === 'owner' ? '/portal' : '/konto'}" data-link>${icon('login')}${escapeHtml(accountLabel)}</a><a class="button button--primary button--compact" href="${CONFIG.discordUrl}" target="_blank" rel="noopener">${icon('discord')}Discord</a></div>
     </div></header>
     <main>${content}</main>
