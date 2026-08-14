@@ -41,7 +41,7 @@ export async function signUpOwner(email, password) {
 export async function signInDiscord(next = '/konto') {
   if (!isSupabaseConfigured()) throw new Error('Discord-Login wird aktiv, sobald Supabase eingerichtet ist.');
   const supabase = await getSupabase();
-  const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'discord', options: { redirectTo: `${location.origin}${next}`, scopes: 'identify email' } });
+  const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'discord', options: { redirectTo: `${location.origin}/`, scopes: 'identify email' } });
   if (error) throw error;
   return data;
 }
