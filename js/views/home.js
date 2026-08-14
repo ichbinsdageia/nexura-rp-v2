@@ -83,6 +83,34 @@ export async function renderHome() {
     ${gangs.length ? `<div class="card-grid">${gangs.slice(0,3).map(gang => `<article class="card"><span class="tag">Bestätigt</span><h3>${escapeHtml(gang.name)}</h3><p>${escapeHtml(gang.description || '')}</p></article>`).join('')}</div>` : `<div class="empty-state"><div class="empty-icon">♠</div><h3>Noch keine bestätigten Gangs</h3><p>Sei eine der ersten Gruppen, die sich bei Nexura RP offiziell registriert und auf der Website vorgestellt wird.</p><a class="button button--primary" href="/gangs" data-link>Gang bewerben</a></div>`}
   </div></section>
 
+  <section class="section section--surface" id="discord">
+    <div class="shell">
+      <div class="section-heading">
+        <div>
+          <span class="kicker">Discord Community</span>
+          <h2>Sei live dabei bei <span class="gradient-text">Nexura RP.</span></h2>
+        </div>
+        <p>
+          Sieh, wer gerade online ist, entdecke unsere öffentlichen Sprachkanäle
+          und tritt direkt dem Nexura-RP-Discord bei.
+        </p>
+      </div>
+
+      <div class="discord-widget-card">
+        <iframe
+          src="https://discord.com/widget?id=1531662107513323781&theme=dark"
+          width="100%"
+          height="500"
+          allowtransparency="true"
+          frameborder="0"
+          sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
+          title="Nexura RP Discord Server"
+          loading="lazy">
+        </iframe>
+      </div>
+    </div>
+  </section>
+
   <section class="section" id="faq"><div class="shell">
     <div class="section-heading"><div><span class="kicker">FAQ</span><h2>Die wichtigsten <span class="gradient-text">Antworten.</span></h2></div></div>
     <div class="faq-list">${FAQ.map(([question, answer], i) => `<div class="faq-item" ${i === 0 ? 'open' : ''}><button type="button" data-faq><span>${escapeHtml(question)}</span><span>+</span></button><div class="faq-answer" ${i === 0 ? '' : 'hidden'}>${escapeHtml(answer)}</div></div>`).join('')}</div>
