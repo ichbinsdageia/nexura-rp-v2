@@ -456,21 +456,3 @@ button { color: inherit; }
     height: 18px;
   }
 }
-
-@media (max-width: 800px) {
-  .mobile-nav-actions {
-    display: grid;
-    gap: 8px;
-    width: 100%;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .mobile-nav-actions a {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-  }
-}
