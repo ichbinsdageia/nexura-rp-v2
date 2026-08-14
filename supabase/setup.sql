@@ -46,9 +46,13 @@ create table if not exists public.team_positions (
   applications_open boolean not null default true,
   minimum_days integer,
   sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   updated_by uuid references public.profiles(id) on delete set null
 );
+
+alter table public.team_positions
+add column if not exists created_at timestamptz not null default now();
 
 create table if not exists public.team_members (
   id uuid primary key default gen_random_uuid(),
