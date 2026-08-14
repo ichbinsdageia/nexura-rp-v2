@@ -1,4 +1,4 @@
-import { publicLayout, bindPublicLayout } from './components/layout.js';
+import { publicLayout, bindPublicLayout } from './components/layout.js?v=20260814-2';
 import { toast } from './components/ui.js';
 import { copyText } from './lib/utils.js';
 import { loadServerStatus, statusPresentation } from './lib/status.js';
