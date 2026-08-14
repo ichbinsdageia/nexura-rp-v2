@@ -158,6 +158,10 @@ const orderColumns = {
   bot_hr_records: ['created_at', { ascending: false }],
 
   bot_sequences: ['value', { ascending: false }],
+
+  team_positions: ['updated_at', { ascending: false }],
+  internal_rules: ['published_at', { ascending: false }],
+  internal_rule_acknowledgements: ['confirmed_at', { ascending: false }],
 };
 
 export async function listRows(table, options = {}) {
