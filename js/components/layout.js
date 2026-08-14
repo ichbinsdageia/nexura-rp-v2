@@ -17,24 +17,20 @@ export async function publicLayout(content, { path = location.pathname, hideStat
       <a class="brand" href="/" data-link aria-label="Nexura RP Startseite"><img src="/assets/nexura-logo.jpg" alt="Nexura RP Logo"><span class="brand-copy"><strong>Nexura RP</strong><small>Emergency Hamburg</small></span></a>
       <button class="menu-toggle" type="button" aria-label="Menü öffnen" data-menu-toggle><span></span><span></span></button>
 <nav class="primary-nav" data-primary-nav>
-  <div class="mobile-nav-actions">
-    <a
-      href="${auth.profile?.website_role === 'owner' ? '/portal' : '/konto'}"
-      data-link
-    >
-      ${icon('login')}
-      ${escapeHtml(accountLabel)}
-    </a>
-
-    <a
-      href="${CONFIG.discordUrl}"
-      target="_blank"
-      rel="noopener"
-    >
-      ${icon('discord')}
-      Discord
-    </a>
-  </div>
+  ${
+    window.matchMedia('(max-width: 800px)').matches
+      ? `
+        <a
+          href="${auth.profile?.website_role === 'owner' ? '/portal' : '/konto'}"
+          data-link
+          style="display:flex;align-items:center;justify-content:center;gap:8px"
+        >
+          ${icon('login')}
+          <span>${escapeHtml(accountLabel)}</span>
+        </a>
+      `
+      : ''
+  }
 
   ${PUBLIC_NAV.map(([p,l]) => navLink(p,l,path)).join('')}
 </nav>
