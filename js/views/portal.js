@@ -281,7 +281,7 @@ async function discordBotView() {
     listRows('bot_status').catch(() => []),
     listRows('bot_logs', { limit: 100 }).catch(() => []),
     listRows('bot_actions', { limit: 40 }).catch(() => []),
-    listRows('bot_tickets', { limit: 40 }).catch(() => []),
+    listRows('bot_tickets', { limit: 500 }).catch(() => []),
     listRows('bot_ban_requests', { limit: 40 }).catch(() => []),
     listRows('bot_duty_shifts', { limit: 40 }).catch(() => []),
     listRows('bot_session_requests', { limit: 40 }).catch(() => []),
@@ -308,6 +308,79 @@ async function discordBotView() {
   const pendingSessions = sessionRequests.filter(row => row.status === 'pending').length;
   const pendingSuggestions = activeSuggestions.filter(row => row.status === 'pending').length;
   const activeGiveaways = giveaways.filter(row => row.status === 'active').length;
+  const ratedTickets = tickets.filter(row => {
+  const rating = Number(row.rating);
+  return Number.isFinite(rating) && rating >= 1 && rating <= 5;
+});
+
+const ratingCount = ratedTickets.length;
+
+const ratingAverage = ratingCount
+  ? ratedTickets.reduce((sum, row) => sum + Number(row.rating), 0) / ratingCount
+  : 0;
+
+const fiveStarCount = ratedTickets.filter(
+  row => Number(row.rating) === 5
+).length;
+
+const fiveStarRate = ratingCount
+  ? Math.round((fiveStarCount / ratingCount) * 100)
+  : 0;
+
+const supporterMap = new Map();
+
+for (const row of ratedTickets) {
+  if (!row.claimed_by_id && !row.claimed_by_name) continue;
+
+  const key =
+    row.claimed_by_id ||
+    row.claimed_by_name;
+
+  const current = supporterMap.get(key) || {
+    name:
+      row.claimed_by_name ||
+      row.claimed_by_id ||
+      'Unbekannt',
+    count: 0,
+    total: 0,
+    fiveStars: 0,
+  };
+
+  current.count += 1;
+  current.total += Number(row.rating);
+
+  if (Number(row.rating) === 5) {
+    current.fiveStars += 1;
+  }
+
+  supporterMap.set(key, current);
+}
+
+const supporterRanking = [...supporterMap.values()]
+  .map(item => ({
+    ...item,
+    average: item.total / item.count,
+  }))
+  .sort((a, b) =>
+    b.average - a.average ||
+    b.count - a.count
+  );
+
+const recentRatings = [...ratedTickets]
+  .sort(
+    (a, b) =>
+      new Date(
+        b.rated_at ||
+        b.closed_at ||
+        b.created_at
+      ).getTime() -
+      new Date(
+        a.rated_at ||
+        a.closed_at ||
+        a.created_at
+      ).getTime()
+  )
+  .slice(0, 10);
 
   if (!settings.id) {
     return `<section class="portal-panel" style="margin-top:0"><div class="permission-lock"><h2>Bot-Datenbank noch nicht initialisiert</h2><p>In <code>bot_settings</code> wurde keine Konfigurationszeile gefunden. Führe zuerst das Nexura-Bot-SQL in Supabase aus.</p></div></section>`;
@@ -433,7 +506,121 @@ async function discordBotView() {
       </div>
     </section>
 
-    <section class="portal-panel">
+    <section class="portal-panel">    <section class="portal-panel">
+      <div class="portal-panel__head">
+        <div>
+          <h2>⭐ Support-Bewertungen</h2>
+          <p>Auswertung der Ticketbewertungen aus den Discord-DMs.</p>
+        </div>
+      </div>
+
+      <div class="portal-grid">
+        <div class="stat-card">
+          <small>Durchschnitt</small>
+          <strong>${ratingCount ? `${ratingAverage.toFixed(2)} ★` : '—'}</strong>
+        </div>
+
+        <div class="stat-card">
+          <small>Bewertungen</small>
+          <strong>${ratingCount}</strong>
+        </div>
+
+        <div class="stat-card">
+          <small>5-Sterne-Quote</small>
+          <strong>${ratingCount ? `${fiveStarRate} %` : '—'}</strong>
+        </div>
+
+        <div class="stat-card">
+          <small>Bewertete Supporter</small>
+          <strong>${supporterRanking.length}</strong>
+        </div>
+      </div>
+
+      <div class="portal-split" style="margin-top:18px">
+        <div>
+          <div class="portal-panel__head">
+            <div>
+              <h3>Supporter-Ranking</h3>
+              <p>Durchschnitt pro Ticketbearbeiter.</p>
+            </div>
+          </div>
+
+          ${
+            supporterRanking.length
+              ? `
+                <div class="table-wrap">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Supporter</th>
+                        <th>Bewertungen</th>
+                        <th>Ø</th>
+                        <th>5 ★</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${supporterRanking.map(item => `
+                        <tr>
+                          <td>${escapeHtml(item.name)}</td>
+                          <td>${item.count}</td>
+                          <td><strong>${item.average.toFixed(2)} ★</strong></td>
+                          <td>${item.fiveStars}</td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              `
+              : '<p class="muted">Noch keine Support-Bewertungen vorhanden.</p>'
+          }
+        </div>
+
+        <div>
+          <div class="portal-panel__head">
+            <div>
+              <h3>Letzte Bewertungen</h3>
+              <p>Die zehn zuletzt abgegebenen Ticketbewertungen.</p>
+            </div>
+          </div>
+
+          ${
+            recentRatings.length
+              ? `
+                <div class="table-wrap">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Ticket</th>
+                        <th>Typ</th>
+                        <th>Supporter</th>
+                        <th>Bewertung</th>
+                        <th>Zeit</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${recentRatings.map(row => `
+                        <tr>
+                          <td>#${escapeHtml(String(row.ticket_number || '—'))}</td>
+                          <td>${escapeHtml(row.ticket_type || 'support')}</td>
+                          <td>${escapeHtml(row.claimed_by_name || row.claimed_by_id || '—')}</td>
+                          <td>
+                            <strong>
+                              ${'★'.repeat(Number(row.rating))}
+                              ${'☆'.repeat(5 - Number(row.rating))}
+                            </strong>
+                          </td>
+                          <td>${formatDate(row.rated_at || row.closed_at || row.created_at)}</td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              `
+              : '<p class="muted">Noch keine Bewertungen abgegeben.</p>'
+          }
+        </div>
+      </div>
+    </section>
       <div class="portal-panel__head"><div><h2>Live-Betrieb</h2><p>Tickets, Ban-Freigaben, Dienste, Sessions, Gewinnspiele, Aktivitätsvorschläge und Security.</p></div></div>
       <div class="portal-grid">
         <div class="stat-card"><small>Aktive Gewinnspiele</small><strong>${activeGiveaways}</strong></div>
