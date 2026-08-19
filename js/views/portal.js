@@ -433,7 +433,6 @@ const recentRatings = [...ratedTickets]
       <div class="form-section">
         <h3>Discord-Kanäle</h3>
         <div class="portal-form-grid">
-          <label class="field"><span>Log-Kanal ID</span><input class="input" name="log_channel_id" value="${escapeHtml(settings.log_channel_id || '')}"></label>
           <label class="field"><span>Welcome-Kanal ID</span><input class="input" name="welcome_channel_id" value="${escapeHtml(settings.welcome_channel_id || '')}"></label>
           <label class="field"><span>Goodbye-Kanal ID</span><input class="input" name="goodbye_channel_id" value="${escapeHtml(settings.goodbye_channel_id || '')}"></label>
           <label class="field"><span>Ticket-Kategorie ID</span><input class="input" name="ticket_category_id" value="${escapeHtml(settings.ticket_category_id || '')}"></label>
