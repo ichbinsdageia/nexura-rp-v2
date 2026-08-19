@@ -1,6 +1,6 @@
 import { CONFIG } from '../config.js';
 import { pageHero } from '../components/layout.js';
-import { currentAuth, signInEmail, signInDiscord, signOut, signUpOwner, updateProfile, enrollMfa, verifyMfaEnrollment, getAal } from '../lib/auth.js';
+import { currentAuth, signInEmail, signInDiscord, signOut, updateProfile, enrollMfa, verifyMfaEnrollment, getAal } from '../lib/auth.js';
 import { insertRow, listRows } from '../lib/store.js';
 import { isSupabaseConfigured } from '../lib/supabase.js';
 import { escapeHtml, formatDate, formDataObject, reference } from '../lib/utils.js';
