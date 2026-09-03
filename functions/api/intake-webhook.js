@@ -7,71 +7,38 @@ import {
 const DEFAULT_GUILD_ID =
   '1531662107513323781';
 
-async function verifyTurnstile(
-  token,
-  ip,
-  secret
-) {
-  if (!secret) return true;
-  if (!token) return false;
-
-  const body = new FormData();
-
-  body.set(
-    'secret',
-    secret
-  );
-
-  body.set(
-    'response',
-    token
-  );
-
-  if (ip) {
-    body.set(
-      'remoteip',
-      ip
-    );
-  }
-
-  const response =
-    await fetch(
-      'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-      {
-        method: 'POST',
-        body
-      }
-    );
-
-  const data =
-    await response.json();
-
-  return Boolean(
-    data.success
-  );
-}
-
 function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    value
+    String(value ?? '')
   );
 }
 
-function supabaseConfig(env) {
+function getSupabaseConfig(env) {
   const url =
     String(
-      env.SUPABASE_URL ||
-      env.PUBLIC_SUPABASE_URL ||
+      env.SUPABASE_URL ??
       ''
     )
       .trim()
-      .replace(/\/+$/, '');
+      .replace(
+        /\/+$/,
+        ''
+      );
 
   const serviceKey =
     String(
-      env.SUPABASE_SERVICE_ROLE_KEY ||
+      env.SUPABASE_SERVICE_ROLE_KEY ??
       ''
     ).trim();
+
+  if (
+    !url ||
+    !serviceKey
+  ) {
+    throw new Error(
+      'SUPABASE_SERVER_NOT_CONFIGURED'
+    );
+  }
 
   return {
     url,
@@ -79,7 +46,7 @@ function supabaseConfig(env) {
   };
 }
 
-function supabaseHeaders(
+function headers(
   serviceKey,
   extra = {}
 ) {
@@ -97,6 +64,9 @@ function supabaseHeaders(
   };
 }
 
+/*
+ * Submission direkt aus Supabase laden.
+ */
 async function getSubmission(
   env,
   submissionId
@@ -105,33 +75,43 @@ async function getSubmission(
     url,
     serviceKey
   } =
-    supabaseConfig(env);
-
-  if (
-    !url ||
-    !serviceKey
-  ) {
-    throw new Error(
-      'SUPABASE_SERVER_NOT_CONFIGURED'
+    getSupabaseConfig(
+      env
     );
-  }
 
   const response =
     await fetch(
-      `${url}/rest/v1/submissions?id=eq.${encodeURIComponent(
+      `${url}/rest/v1/submissions` +
+      `?id=eq.${encodeURIComponent(
         submissionId
-      )}&select=id,reference,type&limit=1`,
+      )}` +
+      `&select=id,reference,type,status,created_at` +
+      `&limit=1`,
       {
-        method: 'GET',
+        method:
+          'GET',
 
         headers:
-          supabaseHeaders(
+          headers(
             serviceKey
           )
       }
     );
 
   if (!response.ok) {
+    const body =
+      await response
+        .text()
+        .catch(
+          () => ''
+        );
+
+    console.error(
+      'Submission lookup failed:',
+      response.status,
+      body
+    );
+
     throw new Error(
       'SUBMISSION_LOOKUP_FAILED'
     );
@@ -140,47 +120,158 @@ async function getSubmission(
   const rows =
     await response.json();
 
-  return rows?.[0] ??
-    null;
+  return (
+    rows?.[0] ??
+    null
+  );
 }
 
-async function enqueueSupportTicket(
+/*
+ * Prüfen, ob dieselbe Submission
+ * bereits in der Bot-Queue steckt.
+ *
+ * Dadurch erzeugt mehrfaches Absenden
+ * oder ein Browser-Retry keine
+ * doppelten Tickets.
+ */
+async function findExistingAction(
   env,
+  guildId,
   submissionId
 ) {
   const {
     url,
     serviceKey
   } =
-    supabaseConfig(env);
+    getSupabaseConfig(
+      env
+    );
 
-  if (
-    !url ||
-    !serviceKey
-  ) {
+  const response =
+    await fetch(
+      `${url}/rest/v1/bot_actions` +
+      `?guild_id=eq.${encodeURIComponent(
+        guildId
+      )}` +
+      `&action=eq.CREATE_SUPPORT_TICKET` +
+      `&select=id,status,payload,created_at` +
+      `&order=created_at.desc` +
+      `&limit=100`,
+      {
+        method:
+          'GET',
+
+        headers:
+          headers(
+            serviceKey
+          )
+      }
+    );
+
+  if (!response.ok) {
+    const body =
+      await response
+        .text()
+        .catch(
+          () => ''
+        );
+
+    console.error(
+      'bot_actions lookup failed:',
+      response.status,
+      body
+    );
+
     throw new Error(
-      'SUPABASE_SERVER_NOT_CONFIGURED'
+      'BOT_ACTION_LOOKUP_FAILED'
     );
   }
 
-  const guildId =
-    String(
-      env.DISCORD_GUILD_ID ||
-      DEFAULT_GUILD_ID
-    ).trim();
+  const rows =
+    await response.json();
+
+  return (
+    rows ?? []
+  ).find(row => {
+    const id =
+      String(
+        row?.payload
+          ?.submission_id ??
+        ''
+      );
+
+    return (
+      id ===
+        submissionId &&
+      [
+        'pending',
+        'running',
+        'done'
+      ].includes(
+        String(
+          row.status
+        )
+      )
+    );
+  }) ?? null;
+}
+
+/*
+ * CREATE_SUPPORT_TICKET
+ * in bot_actions einreihen.
+ */
+async function enqueueSupportTicket(
+  env,
+  guildId,
+  submissionId
+) {
+  const {
+    url,
+    serviceKey
+  } =
+    getSupabaseConfig(
+      env
+    );
+
+  /*
+   * Doppelte Queue-Einträge verhindern.
+   */
+  const existing =
+    await findExistingAction(
+      env,
+      guildId,
+      submissionId
+    );
+
+  if (existing) {
+    return {
+      queued:
+        true,
+
+      duplicate:
+        true,
+
+      actionId:
+        existing.id,
+
+      status:
+        existing.status
+    };
+  }
 
   const response =
     await fetch(
       `${url}/rest/v1/bot_actions`,
       {
-        method: 'POST',
+        method:
+          'POST',
 
         headers:
-          supabaseHeaders(
+          headers(
             serviceKey,
             {
               Prefer:
-                'return=minimal'
+                'return=representation'
             }
           ),
 
@@ -208,7 +299,7 @@ async function enqueueSupportTicket(
     );
 
   if (!response.ok) {
-    const text =
+    const body =
       await response
         .text()
         .catch(
@@ -216,124 +307,34 @@ async function enqueueSupportTicket(
         );
 
     console.error(
-      'bot_actions insert failed',
+      'CREATE_SUPPORT_TICKET insert failed:',
       response.status,
-      text
+      body
     );
 
     throw new Error(
       'BOT_ACTION_INSERT_FAILED'
     );
   }
-}
 
-/*
- * Alter Discord-Webhook bleibt nur
- * als Notfall-Fallback erhalten.
- */
-async function sendLegacyWebhook(
-  env,
-  {
-    reference,
-    category,
-    subject,
-    priority
-  }
-) {
-  const webhook =
-    String(
-      env.DISCORD_INTAKE_WEBHOOK ||
-      ''
-    ).trim();
+  const rows =
+    await response.json();
 
-  if (!webhook) {
-    return false;
-  }
+  return {
+    queued:
+      true,
 
-  const embed = {
-    title:
-      'Neuer Website-Eingang',
+    duplicate:
+      false,
 
-    color:
-      priority === 'urgent'
-        ? 0xff2d95
-        : priority === 'high'
-          ? 0x8b5cf6
-          : 0x159dff,
+    actionId:
+      rows?.[0]?.id ??
+      null,
 
-    fields: [
-      {
-        name:
-          'Referenz',
-        value:
-          reference,
-        inline:
-          true
-      },
-      {
-        name:
-          'Kategorie',
-        value:
-          category,
-        inline:
-          true
-      },
-      {
-        name:
-          'Priorität',
-        value:
-          priority,
-        inline:
-          true
-      },
-      {
-        name:
-          'Betreff',
-        value:
-          subject ||
-          'Ohne Betreff'
-      }
-    ],
-
-    footer: {
-      text:
-        'Nexura RP Website · Bot-Fallback'
-    },
-
-    timestamp:
-      new Date()
-        .toISOString()
+    status:
+      rows?.[0]?.status ??
+      'pending'
   };
-
-  const response =
-    await fetch(
-      webhook,
-      {
-        method:
-          'POST',
-
-        headers: {
-          'content-type':
-            'application/json'
-        },
-
-        body:
-          JSON.stringify({
-            username:
-              'Nexura Website',
-
-            embeds: [
-              embed
-            ],
-
-            allowed_mentions: {
-              parse: []
-            }
-          })
-      }
-    );
-
-  return response.ok;
 }
 
 export async function onRequestPost({
@@ -347,34 +348,10 @@ export async function onRequestPost({
         12_000
       );
 
-    const verified =
-      await verifyTurnstile(
-        data.turnstileToken,
-
-        request.headers.get(
-          'CF-Connecting-IP'
-        ),
-
-        env
-          .TURNSTILE_SECRET_KEY
-      );
-
-    if (!verified) {
-      return json(
-        {
-          error:
-            'Sicherheitsprüfung fehlgeschlagen.'
-        },
-        {
-          status: 403
-        }
-      );
-    }
-
     const submissionId =
       String(
-        data.submission_id ||
-        data.submissionId ||
+        data.submission_id ??
+        data.submissionId ??
         ''
       ).trim();
 
@@ -383,25 +360,6 @@ export async function onRequestPost({
         data.reference,
         80
       );
-
-    const category =
-      clean(
-        data.category,
-        100
-      );
-
-    const subject =
-      clean(
-        data.subject,
-        180
-      );
-
-    const priority =
-      clean(
-        data.priority,
-        30
-      ) ||
-      'normal';
 
     if (
       !submissionId ||
@@ -415,76 +373,34 @@ export async function onRequestPost({
             'Ungültige Submission-ID.'
         },
         {
-          status: 400
+          status:
+            400
         }
       );
     }
 
-    if (
-      !reference ||
-      !category
-    ) {
+    if (!reference) {
       return json(
         {
           error:
-            'Referenz und Kategorie fehlen.'
+            'Referenz fehlt.'
         },
         {
-          status: 400
+          status:
+            400
         }
       );
     }
 
     /*
-     * Submission serverseitig prüfen.
-     *
-     * Dadurch kann ein Besucher nicht
-     * irgendeine beliebige Bot-Aktion
-     * über diesen öffentlichen Endpoint
-     * erzeugen.
+     * Existiert diese Submission
+     * wirklich?
      */
-    let submission;
-
-    try {
-      submission =
-        await getSubmission(
-          env,
-          submissionId
-        );
-    } catch (error) {
-      /*
-       * Falls Supabase serverseitig
-       * noch nicht konfiguriert ist,
-       * behalten wir vorübergehend
-       * den alten Webhook als Fallback.
-       */
-      if (
-        error.message ===
-        'SUPABASE_SERVER_NOT_CONFIGURED'
-      ) {
-        const webhookSent =
-          await sendLegacyWebhook(
-            env,
-            {
-              reference,
-              category,
-              subject,
-              priority
-            }
-          );
-
-        return json({
-          ok: true,
-          queued: false,
-          fallback:
-            webhookSent,
-          reason:
-            'Supabase-Serverzugriff noch nicht konfiguriert.'
-        });
-      }
-
-      throw error;
-    }
+    const submission =
+      await getSubmission(
+        env,
+        submissionId
+      );
 
     if (!submission) {
       return json(
@@ -493,21 +409,23 @@ export async function onRequestPost({
             'Website-Anfrage nicht gefunden.'
         },
         {
-          status: 404
+          status:
+            404
         }
       );
     }
 
     /*
-     * Die vom Browser gelieferte
-     * Referenz muss zum DB-Eintrag
-     * passen.
+     * UUID und sichtbare Referenz
+     * müssen zusammenpassen.
      */
     if (
       String(
         submission.reference
       ) !==
-      String(reference)
+      String(
+        reference
+      )
     ) {
       return json(
         {
@@ -515,15 +433,14 @@ export async function onRequestPost({
             'Referenz stimmt nicht mit der Anfrage überein.'
         },
         {
-          status: 409
+          status:
+            409
         }
       );
     }
 
     /*
-     * Nur Support und Einsprüche dürfen
-     * über diesen Endpoint automatisch
-     * Discord-Tickets erzeugen.
+     * Nur Support und Appeals.
      */
     if (
       ![
@@ -538,53 +455,182 @@ export async function onRequestPost({
       return json(
         {
           error:
-            'Dieser Vorgang ist kein Support-Ticket.'
+            'Dieser Vorgang darf nicht als Support-Ticket verarbeitet werden.'
         },
         {
-          status: 400
+          status:
+            400
         }
       );
     }
 
-    await enqueueSupportTicket(
-      env,
-      submissionId
-    );
+    /*
+     * Nur relativ frisch erstellte
+     * Submissions dürfen über diesen
+     * öffentlichen Endpoint erstmals
+     * in die Queue gestellt werden.
+     *
+     * Das reduziert Missbrauch zusätzlich.
+     */
+    const createdAt =
+      new Date(
+        submission.created_at
+      ).getTime();
+
+    if (
+      Number.isNaN(
+        createdAt
+      )
+    ) {
+      return json(
+        {
+          error:
+            'Ungültiges Erstellungsdatum.'
+        },
+        {
+          status:
+            400
+        }
+      );
+    }
+
+    const ageMs =
+      Date.now() -
+      createdAt;
+
+    /*
+     * 30 Minuten reichen auch bei
+     * langsamerem Upload/Deployment.
+     */
+    if (
+      ageMs < -60000 ||
+      ageMs >
+        30 *
+        60 *
+        1000
+    ) {
+      return json(
+        {
+          error:
+            'Diese Anfrage ist zu alt für eine automatische Discord-Weiterleitung.'
+        },
+        {
+          status:
+            409
+        }
+      );
+    }
+
+    const guildId =
+      String(
+        env.DISCORD_GUILD_ID ??
+        DEFAULT_GUILD_ID
+      ).trim();
+
+    const queued =
+      await enqueueSupportTicket(
+        env,
+        guildId,
+        submissionId
+      );
 
     return json(
       {
-        ok: true,
-        queued: true,
+        ok:
+          true,
+
+        queued:
+          true,
+
+        duplicate:
+          queued.duplicate,
+
+        action_id:
+          queued.actionId,
+
+        action_status:
+          queued.status,
+
         submission_id:
           submissionId
       },
       {
-        status: 202
+        status:
+          202
       }
     );
 
   } catch (error) {
     console.error(
-      'intake-webhook error',
+      'intake-webhook error:',
       error
     );
 
-    const status =
-      error.message ===
+    const message =
+      String(
+        error?.message ??
+        error
+      );
+
+    if (
+      message ===
       'PAYLOAD_TOO_LARGE'
-        ? 413
-        : 500;
+    ) {
+      return json(
+        {
+          error:
+            'Anfrage ist zu groß.'
+        },
+        {
+          status:
+            413
+        }
+      );
+    }
+
+    if (
+      message ===
+      'INVALID_JSON'
+    ) {
+      return json(
+        {
+          error:
+            'Ungültige Anfrage.'
+        },
+        {
+          status:
+            400
+        }
+      );
+    }
+
+    if (
+      message ===
+      'SUPABASE_SERVER_NOT_CONFIGURED'
+    ) {
+      return json(
+        {
+          error:
+            'Supabase-Serverzugriff ist in Cloudflare nicht konfiguriert.'
+        },
+        {
+          status:
+            500
+        }
+      );
+    }
 
     return json(
       {
         error:
-          error.message ===
-          'INVALID_JSON'
-            ? 'Ungültige Anfrage.'
-            : 'Anfrage konnte nicht an den Nexura-Bot übergeben werden.'
+          'Die Anfrage konnte nicht an den Nexura-Bot übergeben werden.',
+
+        code:
+          message
       },
       {
-        status
+        status:
+          500
       }
     );
   }
